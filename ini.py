@@ -55,7 +55,7 @@ import mail
 class LoginFrame(Frame):
     def __init__(self, master):
         Frame.__init__(self, master)
-        self.login_frame = Frame()
+        self.login_frame = self
         self.login_frame['bg'] = cm.M_COLOR['cbg']
         self.login_frame.place(x=41, y=200)  # margin: 41 px.
         self.login_frame.grid_rowconfigure([0, 1, 2, 3, 4, 6, 7, 8], minsize=26)
@@ -77,7 +77,7 @@ class LoginFrame(Frame):
         self.info_lb = self._label('')
         self.info_lb.grid(row=9, columnspan=2)
 
-        self.info_img = PhotoImage(file=cm.resource_path('images/info.png'))
+        self.info_img = PhotoImage(file=cm.resource_path('images/info2.png'))
         self.info_pw_img_lb = Label(self.login_frame, width=24, height=22)
         self.info_pw_img_lb['image'] = self.info_img
         self.info_pw_img_lb['bg'] = cm.M_COLOR['cbg']
@@ -104,7 +104,7 @@ class LoginFrame(Frame):
         self.forgot_pw_bt['command'] = self.reset_frame_raise
         self.forgot_pw_bt.grid(row=4, sticky=W)
 
-        self.login_bt = self._button(w=8, h=1, text='Avançar')
+        self.login_bt = self._button(w=6, h=1, text='Próximo')
         self.login_bt['command'] = self.login_call
         self.login_bt.grid(row=5, sticky=E)
 
@@ -114,7 +114,7 @@ class LoginFrame(Frame):
         self.view_pass_bt['command'] = self.view_pass_toggle
         self.view_pass_bt['image'] = self.view_pass_img_off
 
-        self.reset_email_img = PhotoImage(file=cm.resource_path('images/send.png'))
+        self.reset_email_img = PhotoImage(file=cm.resource_path('images/mail.png'))
         self.send_email_bt = self._button(w=24, h=24, text='')
         self.send_email_bt['command'] = self.f_send_email
         self.send_email_bt['image'] = self.reset_email_img
@@ -134,6 +134,7 @@ class LoginFrame(Frame):
         # self.bind('<Control_L+c>', lambda k: cm.f_invoker(button=self.back_bt))
 
     def login_call(self):
+        self.login_bt['command'] = ''
         self.info_lb.config(text='Validando credenciais...')
         self.after(250, lambda: self.info_lb.config(text='Marcando um dez...'))
         self.after(700, lambda: self.info_lb.config(text='Logado!', fg=cm.M_COLOR['sucess']))
@@ -150,9 +151,9 @@ class LoginFrame(Frame):
             self.r_password_entry['show'] = '*'
             self.view_pass_bt['image'] = self.view_pass_img_off
 
-    def _label(self, txt):
+    def _label(self, text):
         label = Label(
-            self.login_frame, text=txt, fg=cm.M_COLOR['txt'],
+            self.login_frame, text=text, fg=cm.M_COLOR['txt'],
             bg=cm.M_COLOR['cbg'], font=cm.M_FONT,
             anchor='w', wraplengt=146)
         return label
@@ -165,7 +166,7 @@ class LoginFrame(Frame):
 
     def _button(self, w, h, text):
         button = Button(
-            self.login_frame, width=w, height=h, bd=0, text=text, pady=0,
+            self.login_frame, width=w, height=h, bd=0, text=text,
             activebackground=cm.M_COLOR['cbg'],
             activeforeground=cm.M_COLOR['txt'],
             bg=cm.M_COLOR['cbg'],
@@ -286,7 +287,7 @@ class LoginFrame(Frame):
         self.master.withdraw()
         new_top_level = Toplevel(self.master)
         main_window = MainWindow(new_top_level)
-        return main_window
+        # return main_window
             # else:
             #     self.info_lb.config(text='Nome ou senha incorreto!',
             #                         fg=cm.M_COLOR['error'])
@@ -298,7 +299,7 @@ class LoginFrame(Frame):
         #     self.after(2000, lambda: self.info_lb.config(text='',
         #                                                  fg=cm.M_COLOR['txt']))
 
-    def reset_frame_raise(self):
+    def reset_frame_raise(self):  # change to callback method
         if self.login_bt.winfo_ismapped():  # login > email
             self.master.bind('<Return>', lambda k: cm.f_invoker(button=self.send_email_bt))
             self.login_frame.grid_rowconfigure(5, minsize=26)

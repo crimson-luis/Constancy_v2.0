@@ -24,18 +24,18 @@ M_COLOR = {'p0': 'white',
            'error': '#a30000'}
 
 
-def set_appwindow(mainWindow):
+def set_appwindow(window):
     # Honestly forgot what most of this stuff does. I think it's so that you can see
-    # the program in the task bar while using overridedirect. Most of it is taken
+    # the program in the task bar while using overrideredirect. Most of it is taken
     # from a post I found on stackoverflow.
-    hwnd = windll.user32.GetParent(mainWindow.winfo_id())
+    hwnd = windll.user32.GetParent(window.winfo_id())
     stylew = windll.user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
     stylew = stylew & ~WS_EX_TOOLWINDOW
     stylew = stylew | WS_EX_APPWINDOW
     res = windll.user32.SetWindowLongW(hwnd, GWL_EXSTYLE, stylew)
     # re-assert the new window style
-    mainWindow.wm_withdraw()
-    mainWindow.after(10, lambda: mainWindow.wm_deiconify())
+    window.wm_withdraw()
+    window.after(10, lambda: window.wm_deiconify())
 
 
 def del_win(root):
