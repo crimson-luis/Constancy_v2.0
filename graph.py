@@ -1,61 +1,67 @@
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 import datetime as dt
-
-# import PIL
 import mplcyberpunk
-
-# import matplotlib
 from database import read_items
-
-# from numpy import arange, sin, pi
-# from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-# from matplotlib.backend_bases import key_press_handler
-# from matplotlib.figure import Figure
-# matplotlib.use('TkAgg')
-
-data = [k.dict() for k in read_items()]
-df_data = pd.DataFrame.from_dict(data)  # .sort_values(by=['date'])
-df_data["date"] = pd.to_datetime(df_data.date, format="%Y-%m-%d")
-# by_date = df_data.groupby(['date'])
-# last_day = max(df_data['date'])
-# end_of_month = last_day.replace(day=1) + pd.DateOffset(months=1) - dt.timedelta(days=1)
-# forecast_date = pd.date_range(start=min(df_data['date']), end=end_of_month)
-# observed_date = pd.date_range(start=min(df_data['date']), end=max(df_data['date']))
-# values_list = []
+from common import resource_path
 
 
-def f_graph(dataframe=df_data[["date", "value"]], show=True):
-    dataframe = dataframe.groupby(["date"])[["date", "value"]].sum().reset_index()
-    series = pd.Series(dataframe.value, dtype="float64")
-    serialized_date = [dt.datetime.strftime(d, "%d/%m/%y") for d in dataframe.date]
-    plt.style.use("cyberpunk")
-    fig, axis = plt.subplots(1, 1, figsize=(1.55, 1))
-    plt.plot(serialized_date, series.cumsum(), "m", marker=".")
-    # mplcyberpunk.add_glow_effects()
-    if show:
-        plt.xticks(rotation=20)
+class Graph:
+    def __init__(self, customer):
+        self.customer = customer
+        self.items = pd.DataFrame()
+        self.balance_series = pd.DataFrame()
+        self.get_items()
+
+    def get_items(self):
+        self.items = pd.DataFrame(
+            [vars(field) for field in read_items(customer_id=self.customer.id)]
+        )
+        self.balance_series = self.items.groupby(["date"]).sum().reset_index()
+        self.balance_series.sort_values(by=["date"], inplace=True)
+
+    def show(self):
+        plt.close()
+        plt.plot(
+            self.balance_series["date"].dt.strftime("%d/%m/%y"),
+            self.balance_series.value.cumsum(),
+            "m",
+            marker=".",
+        )
+        mplcyberpunk.add_glow_effects()
+        plt.xticks(rotation=22)
         plt.subplots_adjust(right=0.95, top=0.93, bottom=0.15)
-        plt.title("Balance over time")
+        plt.title("Saldo ao longo do tempo")
+        fig = plt.gcf()
         manager = plt.get_current_fig_manager()
-        manager.set_window_title("Constancy - Balance")
-        # manager.window.wm_iconbitmap(resource_path('icon.ico'))
+        manager.set_window_title(f"{self.customer.name} - Balance")
+        manager.window.wm_iconbitmap(resource_path("images/icon.ico"))
         # manager.window.SetPosition()
         plt.ylim(bottom=0)
-        plt.xlabel("Date")
-        plt.ylabel("Balance")
-        # plt.xticks([])
-        # plt.yticks([])
+        plt.xlabel("Data")
+        plt.ylabel("Saldo")
         plt.show()
-    else:
+
+    @property
+    def mini_graph(self):
+        plt.style.use("cyberpunk")
+        mini_figure, mini_figure_axis = plt.subplots(1, 1, figsize=(1.55, 1))
+        plt.plot(
+            self.balance_series["date"].dt.strftime("%d/%m/%y"),
+            self.balance_series.value.cumsum(),
+            "m",
+            marker="."
+        )
         plt.xticks([])
         plt.yticks([])
-        axis.set_facecolor("#24093e")
-        fig.patch.set_facecolor("#24093e")
-        plt.setp(axis.get_xticklabels(), visible=False)
-        plt.setp(axis.get_yticklabels(), visible=False)
-        return fig
-    # img = PIL.Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
+        mini_figure_axis.set_facecolor("#24093e")
+        mini_figure.patch.set_facecolor("#24093e")
+        plt.setp(mini_figure_axis.get_xticklabels(), visible=False)
+        plt.setp(mini_figure_axis.get_yticklabels(), visible=False)
+        # mpl.rcParams.update(mpl.rcParamsDefault)
+        return mini_figure
 
 
-# print(f_graph())
+if __name__ == "__main__":
+    pass

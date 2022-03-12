@@ -5,36 +5,37 @@ from PIL import ImageTk, Image
 from common import M_FONT, M_COLOR, resource_path, del_win
 from log_handler import Logger
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from graph import f_graph
+from graph import Graph
+
+# from show_mpl_graph import show_graph
 from accounting import Accounting
-from database import read_items
+from database import read_items, get_customer
 
 # from tkinter import messagebox
 
 
 class Toolbar(Frame):
-    def __init__(self, master):
+    def __init__(self, master, customer):
         Frame.__init__(self, master)
+        self.customer = customer
         self.master = master  # caso nao for usar tire
-        self.toolbar_frame = self
-        self.toolbar_frame["bg"] = M_COLOR["darker"]
+        self["bg"] = M_COLOR["darker"]
         self.items = pd.DataFrame()
         self.balance = 0
+        self.graph = Graph(customer=self.customer)
         self.showing = False
         # Images.
         self.profile_img = PhotoImage(file=resource_path("images/profile.png"))
         self.refresh_img = PhotoImage(file=resource_path("images/refresh.png"))
         self.blur_img = PhotoImage(file=resource_path("images/blur.png"))
         # Canvas.
-        self.graph_preview = FigureCanvasTkAgg(
-            f_graph(show=False), master=self.toolbar_frame
-        )
-        # self.graph_preview.draw()
+        self.graph_widget = None
+        # self.graph_widget.draw()
         self.toolbar_canvas = Canvas(
-            self.toolbar_frame,
+            self,
             bg=M_COLOR["darker"],
             width=152,
-            height=164,
+            height=188,
             highlightthickness=0,
         )
         self.balance_text_lb = self.toolbar_canvas.create_text(
@@ -59,7 +60,7 @@ class Toolbar(Frame):
             tag="balance",
         )
         self.blur = self.toolbar_canvas.create_image(
-            28, 25, image=self.blur_img, anchor=NW
+            28, 24, image=self.blur_img, anchor=NW
         )
         # Buttons.
         self.refresh_bt = Button(
@@ -87,53 +88,67 @@ class Toolbar(Frame):
         )
         # Placing and packing.
         self.toolbar_canvas.pack()
-        self.graph_preview.get_tk_widget().pack(fill=BOTH)
+        self.create_mini_plot()
         self.refresh_bt.place(x=135, y=0)
         self.profile_bt.place(x=4, y=60)
         # Binds.
         self.toolbar_canvas.tag_bind(
-            self.balance_value_lb,
-            "<ButtonPress-1>",
-            self.view_balance_toggle
+            self.balance_value_lb, "<ButtonPress-1>", self.view_balance_toggle
         )
         self.toolbar_canvas.tag_bind(
-            self.blur,
-            "<ButtonPress-1>",
-            self.view_balance_toggle
+            self.blur, "<ButtonPress-1>", self.view_balance_toggle
         )
 
+    def create_mini_plot(self):
+        if self.graph_widget:
+            self.graph_widget.destroy()
+        self.graph.get_items()
+        self.graph_widget = FigureCanvasTkAgg(
+            self.graph.mini_graph, master=self
+        ).get_tk_widget()
+        self.graph_widget.pack(fill=BOTH)
+        self.graph_widget.bind(
+            "<ButtonPress-1>",
+            self.open_graph,
+        )
+
+    def open_graph(self, event=None):
+        self.graph.show()
+        return event
+
     def refresh(self):
-        # self.graph_preview.get_tk_widget().pack(fill=BOTH)
-        try:
-            self.items = pd.DataFrame.from_dict([k.dict() for k in read_items()])
-            self.balance = self.items.value.sum()
-            self.toolbar_canvas.itemconfig(self.updated_lb, text="...")
-            self.after(
-                100,
-                lambda: self.toolbar_canvas.itemconfig(
-                    self.updated_lb, text="Atualizado"
-                ),
-            )
-            self.after(
-                900,
-                lambda: self.toolbar_canvas.itemconfig(
-                    self.updated_lb, text=""
-                ),
-            )
-        except Exception as e:
-            self.toolbar_canvas.itemconfig(self.updated_lb, text="...")
-            self.after(
-                100,
-                lambda: self.toolbar_canvas.itemconfig(
-                    self.updated_lb, text=f"Erro: {e}"
-                ),
-            )
-            self.after(
-                1200,
-                lambda: self.toolbar_canvas.itemconfig(
-                    self.updated_lb, text=""
-                ),
-            )
+        # try:
+        self.items = pd.DataFrame(
+            [vars(field) for field in read_items(customer_id=self.customer.id)]
+        )
+        self.balance = self.items.value.sum()
+        self.toolbar_canvas.itemconfig(self.updated_lb, text="...")
+        self.toolbar_canvas.itemconfig(
+            self.balance_value_lb, text=f"R$ {self.balance:9,.2f}"
+        )
+        self.create_mini_plot()
+        self.after(
+            100,
+            lambda: self.toolbar_canvas.itemconfig(
+                self.updated_lb, text="Atualizado"
+            ),
+        )
+        self.after(
+            900,
+            lambda: self.toolbar_canvas.itemconfig(self.updated_lb, text=""),
+        )
+        # except Exception as var_exception:
+        #     self.toolbar_canvas.itemconfig(self.updated_lb, text="...")
+        #     self.after(
+        #         100,
+        #         lambda: self.toolbar_canvas.itemconfig(
+        #             self.updated_lb, text=f"Erro."
+        #         ),
+        #     )
+        #     self.after(
+        #         1200,
+        #         lambda: self.toolbar_canvas.itemconfig(self.updated_lb, text=""),
+        #     )
 
     def view_balance_toggle(self, event=None):
         if self.showing:  # unseen>seen
@@ -141,7 +156,7 @@ class Toolbar(Frame):
         else:
             self.refresh()
             self.toolbar_canvas.itemconfig(
-                self.balance_value_lb, text=f"R$ {self.balance:.2f}"
+                self.balance_value_lb, text=f"R$ {self.balance:9,.2f}"
             )
             self.after(
                 300, lambda: self.toolbar_canvas.itemconfig(self.blur, state=HIDDEN)
@@ -157,13 +172,12 @@ class StatusBar(Frame):
         self["bg"] = M_COLOR["darker"]
         # self.pack_propagate(False)
         self["height"] = 20
-        self.status_bar_frame = self
-        name = "Luis"
+        self.customer = self.master.customer
 
         # Labels.
         self.status_lb = Label(
             self,
-            text=f"Olá, {name} - Constancy",
+            text=f"Olá, {self.customer.name} - Constancy",
             bg=M_COLOR["darker"],
             fg=M_COLOR["txt"],
             font=M_FONT,
@@ -179,24 +193,26 @@ class StatusBar(Frame):
 
 
 # MainWindow window.
-class MainWindow(Frame):
-    def __init__(self, master):
-        Frame.__init__(self, master)
+class MainWindow(Toplevel):
+    def __init__(self, master, customer):
+        super().__init__()
         self.master = master
+        self.customer = customer
+        self.logger = Logger()
         self.res_w, self.res_h = 764, 286  # carregar do arquivo de usuarios
         self.x, self.y = int(GetSystemMetrics(0) / 2 - self.res_w / 2), int(
             GetSystemMetrics(1) / 2 - self.res_h / 2
         )
-        master.geometry(f"{self.res_w}x{self.res_h}+{self.x}+{self.y}")
-        master.iconbitmap(resource_path("images/icon.ico"))
-        master.focus_force()
-        # master.resizable(0, 0)
-
-        Logger().log_it("kern", "info", "Main window opened.")
+        self.geometry(f"{self.res_w}x{self.res_h}+{self.x}+{self.y}")
+        self.iconbitmap(resource_path("images/icon.ico"))
+        self.focus_force()
+        self.resizable(0, 0)
+        self.protocol("WM_DELETE_WINDOW", lambda: del_win(self.master))
+        self.logger.log_it("kern", "info", "Main window opened.")
 
         # Variables.
         # self.res_before = self.res_w, self.res_h
-        self.loc_before = self.master.winfo_x(), self.master.winfo_y()
+        self.loc_before = self.winfo_x(), self.winfo_y()
         self.window_status = "normal"
         self.displays = 0
         self.max_res = 0, 0
@@ -205,19 +221,17 @@ class MainWindow(Frame):
         self.saved = False
 
         # Frames.  # fazer um frame base para os outros quatro frames.
-        self.middle_frame = Frame(master, height=492, bg="white")
-        self.toolbar = Toolbar(self.middle_frame)
-        self.accounting = Accounting(self.middle_frame)
-        self.status_bar = StatusBar(master)
+        self.toolbar = Toolbar(self, customer=self.customer)
+        self.accounting = Accounting(self, customer=self.customer)
+        self.status_bar = StatusBar(self)
 
-        master.title("Constancy")
+        self.title("Constancy")
 
         # Binds.
-        master.bind("<Map>", self.mapped)
-        master.bind("<Escape>", self.f_quit)
+        self.bind("<Map>", self.mapped)
+        self.bind("<Escape>", self.f_quit)
 
         # Packing.
-        self.middle_frame.pack(fill=X)
         self.toolbar.pack(side=LEFT)
         self.accounting.pack(fill=BOTH)
         self.status_bar.pack(fill=X)
@@ -229,19 +243,18 @@ class MainWindow(Frame):
     def f_quit(self, event=None):
         if self.saved:
             # deseja salvar mudanças antes de sair?
+            self.destroy()
             self.master.destroy()
         else:
+            # self.master.destroy()
+            self.destroy()
             self.master.destroy()
         return event
 
 
-def login():
-    root = Tk()
-    root.protocol("WM_DELETE_WINDOW", lambda: del_win(root))
-    root_window = MainWindow(root)
-    root.mainloop()
-    return root_window
+def main():
+    pass
 
 
 if __name__ == "__main__":
-    login()
+    main()

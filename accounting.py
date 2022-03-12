@@ -1,8 +1,10 @@
+import tkinter
+import tkinter.messagebox
 from datetime import datetime, time
 from tkinter import ttk
 from tkinter import *
 import common as cm
-from models import Item, SubItem, Customer
+from database import Item, SubItem, Customer
 from database import (
     delete_item,
     create_item,
@@ -38,15 +40,15 @@ class ItemError(Exception):
 
 
 class Accounting(Frame):
-    def __init__(self, master):
+    def __init__(self, master, customer):
         Frame.__init__(self, master)
         self.master = master
-        # self.accounting_frame = self
+        self.customer = customer
+        self.logger = Logger()
         self["bg"] = "gray"
 
         # Variables.
         self.bg_color = cm.M_COLOR["cbg"]
-        self.customer_id = 1
         self.items_list = list()
         self.add_sub_item = True
         self.selected_item_index = 0
@@ -83,9 +85,10 @@ class Accounting(Frame):
             selectforeground=cm.M_COLOR["txt"],
         )
         style = ttk.Style()
-        style.theme_use('clam')
+        style.theme_use("clam")
         style.configure(
             "Vertical.TScrollbar",
+            foreground=cm.M_COLOR["txt"],
             background=cm.M_COLOR["darker"],
             bordercolor=cm.M_COLOR["cbg"],
             troughcolor=cm.M_COLOR["cbg"],
@@ -120,13 +123,40 @@ class Accounting(Frame):
         #     arrowsize=16,
         #     gripcount=0,
         # )
-        style.layout("EntryStyle.TEntry",
-                     [('Entry.plain.field', {'children': [(
-                         'Entry.background', {'children': [(
-                             'Entry.padding', {'children': [(
-                                 'Entry.textarea', {'sticky': 'nswe'})],
-                                 'sticky': 'nswe'})], 'sticky': 'nswe'})],
-                         'border': '0', 'sticky': 'nswe'})])
+        style.layout(
+            "EntryStyle.TEntry",
+            [
+                (
+                    "Entry.plain.field",
+                    {
+                        "children": [
+                            (
+                                "Entry.background",
+                                {
+                                    "children": [
+                                        (
+                                            "Entry.padding",
+                                            {
+                                                "children": [
+                                                    (
+                                                        "Entry.textarea",
+                                                        {"sticky": "nswe"},
+                                                    )
+                                                ],
+                                                "sticky": "nswe",
+                                            },
+                                        )
+                                    ],
+                                    "sticky": "nswe",
+                                },
+                            )
+                        ],
+                        "border": "0",
+                        "sticky": "nswe",
+                    },
+                )
+            ],
+        )
         self.scrollbar = ttk.Scrollbar(self.info_frame, orient=VERTICAL)
         self.items_listbox.config(yscrollcommand=self.scrollbar.set)
         self.scrollbar.config(command=self.items_listbox.yview)
@@ -172,15 +202,16 @@ class Accounting(Frame):
             font=cm.M_FONT,
             style="EntryStyle.TEntry",
         )
+        self.type_values = ("Gasto", "Ganho")  # assure that pos 0 is debit.
         self.type_list = ttk.Combobox(
             self.item_frame,
             width=8,
             font=cm.M_FONT,
             style="ComboBoxStyle.TCombobox",
-            values=("Débito", "Crédito"),
+            values=self.type_values,
             state="readonly",
         )
-        self.type_list.set("Débito")
+        self.type_list.set(self.type_values[0])
 
         # Buttons.
         self.add_item_button = self._button(frame=self.item_frame, text="Confirmar")
@@ -236,7 +267,7 @@ class Accounting(Frame):
         """Add item and/or sub item list to database, considering the operation type
         (from type_list entry)."""
         # create a stringvar to represent op_type.
-        operation_type = -1 if self.type_list.get() == "Débito" else 1
+        operation_type = -1 if self.type_list.get() == self.type_values[0] else 1
         items = self.description_entry.get().split(";")
         values = self.value_entry.get().split(";")
         print(values, items)
@@ -249,12 +280,12 @@ class Accounting(Frame):
         if len(items) != len(values):
             self.error_label(
                 text="A quantidade de items na Descrição precisa ser igual "
-                     "à quantidade de valores."
+                "à quantidade de valores."
             )
             self.description_entry.focus()
             return
         if len(items) > 1 and (
-                self.sub_description_entry.get() != "" or self.sub_value_entry.get() != ""
+            self.sub_description_entry.get() != "" or self.sub_value_entry.get() != ""
         ):
             self.error_label(
                 text="Múltiplos produtos na Descrição não podem ter " "Subitems"
@@ -265,7 +296,7 @@ class Accounting(Frame):
         items_dict = dict(zip(items, values))
         items_list = [
             Item(
-                customer_id=self.customer_id,  # 1 de teste
+                customer_id=self.customer.id,  # 1 de teste
                 date=datetime.combine(self.date_entry.get_date(), time()),
                 kind=self.class_entry.get(),
                 type=operation_type,
@@ -279,11 +310,11 @@ class Accounting(Frame):
             for item in items_list:
                 create_item(item)
                 self.get_items()
-                Logger().log_it("kern", "info", f"Commit done: {item}.")
+                self.logger.log_it("kern", "info", f"Commit done: {item}.")
                 self.update_string(item)
+            self.master.toolbar.refresh()
             self.cancel()
             self.class_entry.focus()
-            print(self.add_sub_item)
             if self.add_sub_item:
                 cm.f_invoker(self.add_sub_item_button)
         except ItemError as ie:
@@ -321,7 +352,7 @@ class Accounting(Frame):
             )
             create_sub_item(last_sub_item)
             self.get_items()
-            Logger().log_it("kern", "info", f"Commit done: {last_sub_item}.")
+            self.logger.log_it("kern", "info", f"Commit done: {last_sub_item}.")
 
     def error_label(self, text: str):
         print("error label")
@@ -348,20 +379,27 @@ class Accounting(Frame):
             self.sub_value_entry.grid(row=2, column=2)
             self.add_sub_item_button["background"] = cm.M_COLOR["darker"]
 
-    def del_item(self):  # excluir subitems
-        delete_item(self.items_list.pop(self.selected_item_index).id)
-        self.items_listbox.delete(self.items_listbox.curselection()[0])
-        self.get_items()
-        self.items_listbox.selection_set(0)
-        self.items_listbox.activate(0)
-        self.listbox_callback()
-        # self.items_listbox.see(1)
+    def del_item(self):  # excluir subitems, proibir de excluir o Saldo Inicial
+        if self.items_listbox:  # se nao tiver item na lista nao abrir msgbox
+            if tkinter.messagebox.askyesno(
+                    title="Constancy",
+                    message="Confirmar exclusão?",
+            ):
+                delete_item(self.items_list.pop(self.selected_item_index).id)
+                self.items_listbox.delete(self.items_listbox.curselection()[0])
+                self.get_items()
+                self.master.toolbar.refresh()
+                self.items_listbox.selection_set(0)
+                self.items_listbox.activate(0)
+                self.listbox_callback()
+                # self.items_listbox.see(1)
+        self.master.focus()  # arrumar isso!
 
     def get_items(self):
-        self.items_list = read_items()
+        self.items_list = read_items(customer_id=self.customer.id)
 
-    def get_sub_items(self):  #
-        self.items_list = read_sub_items()
+    # def get_sub_items(self):  #
+    #     self.items_list = read_sub_items(item_id=1)
 
     def update_string(self, last_item):  # adicionar data a linha
         # if self.sub_items_list
@@ -369,13 +407,14 @@ class Accounting(Frame):
             type_text = "Item"
         else:
             type_text = "SubItem"
-        line = f'{last_item.date.strftime("%d/%m/%Y")} — {type_text}: {last_item.kind}, {last_item.description}'
+        line = f'{last_item.date.strftime("%d/%m/%Y")} — {type_text}: {last_item.kind},' \
+               f' {last_item.description}'
         self.items_listbox.insert(0, line)
 
     def listbox_callback(self, event=None):
         try:
             self.selected_item_index = (
-                    len(self.items_list) - 1 - self.items_listbox.curselection()[0]
+                len(self.items_list) - 1 - self.items_listbox.curselection()[0]
             )
             print(self.selected_item_index)
             print(self.items_list[self.selected_item_index])

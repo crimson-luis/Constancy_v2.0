@@ -13,15 +13,18 @@ logged_user = dict()
 GWL_EXSTYLE = -20
 WS_EX_APPWINDOW = 0x00040000
 WS_EX_TOOLWINDOW = 0x00000080
-M_FONT = 'Roboto 10'
-M_COLOR = {'p0': 'white',
-           'txt': '#9a69cb',
-           'cbg': '#451473',  # 5e4278
-           'darker': '#24093e',  # 321a4c
-           'rp0': '#7a5796',
-           'rp1': '#ffd9ff',
-           'sucess': '#00a000',
-           'error': '#a30000'}
+M_FONT = "Roboto 10"
+EMAIL_REGEX = r"^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$"
+M_COLOR = {
+    "p0": "white",
+    "txt": "#9a69cb",
+    "cbg": "#451473",  # 5e4278
+    "darker": "#24093e",  # 321a4c
+    "rp0": "#7a5796",
+    "rp1": "#ffd9ff",
+    "success": "#00a000",
+    "error": "#a30000",
+}
 
 
 def set_appwindow(window):
@@ -39,7 +42,7 @@ def set_appwindow(window):
 
 
 def del_win(root):
-    log_handler.Logger().log_it('syslog', 'info', 'Application aborted.')
+    log_handler.Logger().log_it("syslog", "info", "Application aborted.")
     root.destroy()
 
 
@@ -49,13 +52,17 @@ def f_invoker(button, event=None):
 
 
 def f_error_msg(index, txt):
-    messagebox.showerror('Erro {}!'.format(index), txt)
+    messagebox.showerror("Erro {}!".format(index), txt)
 
 
-def file_permissions(file, sys_acess=con.FILE_ALL_ACCESS, user_acess=con.FILE_ALL_ACCESS,
-                     admin_acess=con.FILE_GENERIC_WRITE):
-    """Set permissions and hide the file (System-> con.FILE_ALL_ACCESS; Admin-> con.FILE_GENERIC_WRITE; User->
-    con.FILE_GENERIC_WRITE)."""
+def file_permissions(
+    file,
+    sys_acess=con.FILE_ALL_ACCESS,
+    user_acess=con.FILE_ALL_ACCESS,
+    admin_acess=con.FILE_GENERIC_WRITE,
+):
+    """Set permissions and hide the file (System-> con.FILE_ALL_ACCESS; Admin->
+    con.FILE_GENERIC_WRITE; User-> con.FILE_GENERIC_WRITE)."""
     # SID for system, admin and user.
     system, domain, _type = win32security.LookupAccountName("", "SYSTEM")
     admins, domain, _type = win32security.LookupAccountName("", "Administrators")
@@ -81,24 +88,34 @@ def hide_file(file):
 
 
 def change_key():
-    """Change/create the cryptography key, intended to be used one time every installation because once one key is used
-    it won't work if changed."""
-    key_path = resource_path('lk.key')
+    """Change/create the cryptography key, intended to be used one time every installation
+    because once one key is used it won't work if changed."""
+    key_path = resource_path("lk.key")
     if not os.path.isfile(key_path):
-        with open(key_path, 'wb') as file:
+        with open(key_path, "wb") as file:
             new_key = Fernet.generate_key()
             file.write(new_key)
-        file_permissions(key_path, con.FILE_ALL_ACCESS, con.FILE_GENERIC_WRITE, con.FILE_GENERIC_WRITE)
+        file_permissions(
+            key_path,
+            con.FILE_ALL_ACCESS,
+            con.FILE_GENERIC_WRITE,
+            con.FILE_GENERIC_WRITE,
+        )
 
 
 def get_key():
-    """Open key file, remove permissions, read key, re-add permissions and return the Fernet key object."""
-    key_path = resource_path('lk.key')
+    """Open key file, remove permissions, read key, re-add permissions and return the
+    Fernet key object."""
+    key_path = resource_path("lk.key")
     # giving permission to read then removing again... ugly? maybe but works
-    file_permissions(key_path, con.FILE_ALL_ACCESS, con.FILE_ALL_ACCESS, con.FILE_GENERIC_WRITE)
-    with open(key_path, 'rb') as file:
+    file_permissions(
+        key_path, con.FILE_ALL_ACCESS, con.FILE_ALL_ACCESS, con.FILE_GENERIC_WRITE
+    )
+    with open(key_path, "rb") as file:
         key = file.read()
-    file_permissions(key_path, con.FILE_ALL_ACCESS, con.FILE_GENERIC_WRITE, con.FILE_GENERIC_WRITE)
+    file_permissions(
+        key_path, con.FILE_ALL_ACCESS, con.FILE_GENERIC_WRITE, con.FILE_GENERIC_WRITE
+    )
     return Fernet(key)
 
 
@@ -110,5 +127,5 @@ def f_encrypt(password):
 
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
-    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
