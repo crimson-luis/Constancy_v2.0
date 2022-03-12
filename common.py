@@ -3,7 +3,7 @@ from tkinter import messagebox
 import ntsecuritycon as con
 from ctypes import windll
 import win32security
-import log_handler
+from processing import log_handler
 import win32api
 import win32con
 import sys
@@ -90,7 +90,7 @@ def hide_file(file):
 def change_key():
     """Change/create the cryptography key, intended to be used one time every installation
     because once one key is used it won't work if changed."""
-    key_path = resource_path("lk.key")
+    key_path = resource_path("data/lk.key")
     if not os.path.isfile(key_path):
         with open(key_path, "wb") as file:
             new_key = Fernet.generate_key()
@@ -106,7 +106,7 @@ def change_key():
 def get_key():
     """Open key file, remove permissions, read key, re-add permissions and return the
     Fernet key object."""
-    key_path = resource_path("lk.key")
+    key_path = resource_path("data/lk.key")
     # giving permission to read then removing again... ugly? maybe but works
     file_permissions(
         key_path, con.FILE_ALL_ACCESS, con.FILE_ALL_ACCESS, con.FILE_GENERIC_WRITE

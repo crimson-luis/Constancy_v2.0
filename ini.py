@@ -40,9 +40,7 @@
 # import os
 
 from win32api import GetSystemMetrics
-from database import Customer
-import json_handler as jh
-import log_handler as lh
+from processing.database import Customer
 from tkinter import ttk
 from tkinter import *
 from common import (
@@ -58,11 +56,11 @@ from common import (
 import regex as re
 from threading import Thread
 from string import digits
-import database as db
+from processing import log_handler as lh, json_handler as jh, database as db
 from random import choices
-from messages import MessageWindow
-from main import MainWindow
-import mail
+from src.messages import MessageWindow
+from src.main import MainWindow
+from src import mail
 
 
 # Login/Create frame.
