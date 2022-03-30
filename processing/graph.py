@@ -35,8 +35,8 @@ class Graph:
         plt.title("Saldo ao longo do tempo")
         fig = plt.gcf()
         manager = plt.get_current_fig_manager()
+        manager.window.wm_iconbitmap(resource_path("images/icon.ico"))
         manager.set_window_title(f"{self.customer.name} - Balance")
-        manager.window.wm_iconbitmap(resource_path("../images/icon.ico"))
         # manager.window.SetPosition()
         plt.ylim(bottom=0)
         plt.xlabel("Data")
@@ -51,7 +51,7 @@ class Graph:
             self.balance_series["date"].dt.strftime("%d/%m/%y"),
             self.balance_series.value.cumsum(),
             "m",
-            marker="."
+            marker=".",
         )
         plt.xticks([])
         plt.yticks([])

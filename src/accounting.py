@@ -16,12 +16,9 @@ from processing.log_handler import Logger
 
 
 # TODO:
-# fazer menu com opcoes em toolbar.
-# perguntar se deseja exlcuir realmente no delete_item
 # arrumar label da listbox
 # arrumar data
 # separar funcao de item e subitem
-# botao de mostrar gráfico ampliado
 # botao de adicionar subitem
 # editar item/subitem
 
@@ -41,16 +38,14 @@ class ItemError(Exception):
 class Accounting(Frame):
     def __init__(self, master, customer):
         Frame.__init__(self, master)
-        self.master = master
-        self.customer = customer
-        self.logger = Logger()
-        self["bg"] = "gray"
-
-        # Variables.
         self.bg_color = cm.M_COLOR["cbg"]
+        self.selected_item_index = 0
         self.items_list = list()
         self.add_sub_item = True
-        self.selected_item_index = 0
+        self.customer = customer
+        self.logger = Logger()
+        self.master = master
+        self["bg"] = "gray"
         # self.query_list = list()
         # self.sub_item_list = list()
 
@@ -381,8 +376,8 @@ class Accounting(Frame):
     def del_item(self):  # excluir subitems, proibir de excluir o Saldo Inicial
         if self.items_listbox:  # se nao tiver item na lista nao abrir msgbox
             if tkinter.messagebox.askyesno(
-                    title="Constancy",
-                    message="Confirmar exclusão?",
+                title="Constancy",
+                message="Confirmar exclusão?",
             ):
                 delete_item(self.items_list.pop(self.selected_item_index).id)
                 self.items_listbox.delete(self.items_listbox.curselection()[0])
@@ -406,8 +401,10 @@ class Accounting(Frame):
             type_text = "Item"
         else:
             type_text = "SubItem"
-        line = f'{last_item.date.strftime("%d/%m/%Y")} — {type_text}: {last_item.kind},' \
-               f' {last_item.description}'
+        line = (
+            f'{last_item.date.strftime("%d/%m/%Y")} — {type_text}: {last_item.kind},'
+            f" {last_item.description}"
+        )
         self.items_listbox.insert(0, line)
 
     def listbox_callback(self, event=None):

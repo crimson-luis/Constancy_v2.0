@@ -23,11 +23,9 @@ class MessageWindow(Toplevel):
         self.x, self.y = int(GetSystemMetrics(0) / 2 - self.width / 2), int(
             GetSystemMetrics(1) / 2 - self.height / 2
         )
-        self.geometry(
-            "{}x{}+{}+{}".format(self.width, self.height, self.x, self.y)
-        )
+        self.geometry("{}x{}+{}+{}".format(self.width, self.height, self.x, self.y))
         # master.iconbitmap(resource_path("images/icon.ico"))
-        self.attributes('-topmost', 1)
+        self.attributes("-topmost", 1)
         self.overrideredirect(1)
         self.resizable(0, 0)
         self["bg"] = M_COLOR["cbg"]
@@ -45,9 +43,7 @@ class MessageWindow(Toplevel):
         self.send_bt["font"] = M_FONT
         self.send_bt.place(x=208, y=80)
 
-        self.cancel_bt = Button(
-            self, width=6, height=1, bd=0, text="Cancelar", pady=0
-        )
+        self.cancel_bt = Button(self, width=6, height=1, bd=0, text="Cancelar", pady=0)
         self.cancel_bt["activebackground"] = M_COLOR["cbg"]
         self.cancel_bt["activeforeground"] = M_COLOR["txt"]
         self.cancel_bt["foreground"] = M_COLOR["txt"]
