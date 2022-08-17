@@ -2,7 +2,7 @@
 ![Constancy](https://github.com/crimson-luis/Constancy_v2.0/blob/main/showcase/file.gif)
 
 # Constancy_v2.0
-This software aims to provide an overview of your spending and earnings.
+This software aims to provide a helpful tool to organize and get an overview of your spending and earnings.
 
 ### Pictures
 <img src="https://github.com/crimson-luis/Constancy_v2.0/blob/main/showcase/login.png">
