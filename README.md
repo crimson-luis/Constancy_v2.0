@@ -6,5 +6,7 @@
 This software aims to provide a helpful tool to organize and get an overview of your spending and earnings.
 
 ### Pictures
-<img src="https://github.com/crimson-luis/Constancy_v2.0/blob/main/showcase/login.png">
+<img src="https://github.com/crimson-luis/Constancy_v2.0/blob/main/showcase/login.png"> <img src="https://github.com/crimson-luis/Constancy_v2.0/blob/main/showcase/mail.png">
 <img src="https://github.com/crimson-luis/Constancy_v2.0/blob/main/showcase/main.png">
+<img src="https://github.com/crimson-luis/Constancy_v2.0/blob/main/showcase/insert.png">
+<img src="https://github.com/crimson-luis/Constancy_v2.0/blob/main/showcase/profile.png">
