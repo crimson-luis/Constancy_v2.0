@@ -6,13 +6,13 @@ from common import (
     M_FONT,
     M_COLOR,
     resource_path,
-    set_appwindow,
+    set_app_window,
     change_key,
     del_win,
 )
 
 
-class Login(Tk):
+class Initial(Tk):
     def __init__(self):
         super().__init__()
         # self.master = master
@@ -30,7 +30,7 @@ class Login(Tk):
         self.title("")
         self.logger = lh.Logger()
         self.logger.log_it("kern", "info", "Application started.")
-        set_appwindow(self)
+        set_app_window(self)
 
         # Variables.
         self.login_frame = LoginFrame(master=self)
@@ -81,8 +81,8 @@ class Login(Tk):
 def login():
     db.create_db()
     change_key()
-    root = Login()
-    root.protocol("WM_DELETE_WINDOW", lambda: del_win(root))
+    root = Initial()
+    # root.protocol("WM_DELETE_WINDOW", lambda: del_win(root))
     root.mainloop()
 
 

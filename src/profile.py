@@ -1,19 +1,32 @@
-# import tkinter
-# import tkinter.messagebox
-# from datetime import datetime, time
-from tkinter import ttk
-from tkinter import *
-import common as cm
 # from processing.database import Item, SubItem
+import datetime
+
+from processing.log_handler import Logger
+# from datetime import datetime, time
+from calendar import monthrange
+from tkcalendar import DateEntry
+from tkinter import *
+import pandas as pd
 from processing.database import (
     # delete_item,
     # create_item,
     # create_sub_item,
     read_items,
 )
-# from tkcalendar import DateEntry
-import pandas as pd
-from processing.log_handler import Logger
+from common import (
+    _entry,
+    _label,
+    _button,
+    M_COLOR,
+    M_FONT
+)
+
+# TODO:
+#       - deletar perfil;
+#       - botao editar;
+#       - forecast;
+#       - mais info;
+#       - comparar;
 
 
 class Profile(Frame):
@@ -22,181 +35,200 @@ class Profile(Frame):
         self.master = master
         self.customer = customer
         self.logger = Logger()
-        self["bg"] = "gray"
+        self["bg"] = M_COLOR["cbg"]
         self.pack_propagate(False)
         self["width"] = 610
         self["height"] = 264
         self.items = pd.DataFrame()
+        self.filtered_items = pd.DataFrame()
+        self.today = datetime.datetime.today()
+        self.end_of_month = monthrange(year=self.today.year, month=self.today.month)[1]
+
+        # Functions.
         self.update_item_list()
+        self.user_created_at = self.items.index.min()
+        self.change_date_range(self.user_created_at, self.items.index.max())
+        self.first_date = self.filtered_items.index.min()
+        self.last_date = self.filtered_items.index.max()
+
+        # Statistics.
+        self.items_count = None
+        self.total_spend = None
+        self.total_profit = None
+        self.total_balance = None
+        self.average_daily_balance = None
 
         # Frames.
-        self.info_frame = Frame(self, bg=cm.M_COLOR["cbg"])
+        self.info_frame = Frame(self, bg=M_COLOR["cbg"])
         self.info_frame.pack(fill=BOTH)
 
         # Labels.
-        self.name_label = self._label(
+        self.name_label = _label(
             frame=self.info_frame,
-            text=f"{self.customer.id} - {self.customer.name}",
+            text=f"{self.customer.id}. {self.customer.name}",
         )
-        self.daily_balance = self._label(
+        self.total_spend_label = _label(
             frame=self.info_frame,
-            text=f"Saldo médio diário: R$ {self.items.value[1:].mean():.02f}",
+            text=f"Gasto total: R$ ",
         )
-        self.total_items = self._label(
+        self.total_balance_label = _label(
             frame=self.info_frame,
-            text=f"Total de itens: {self.items[1:].shape[0]}",
+            text=f"Saldo total: R$ ",
         )
-        # self.media_diaria = self._label(frame=self.info_frame, text="Descrição")
-        self.forecast_balance = self._label(
+        self.total_profit_label = _label(
             frame=self.info_frame,
-            text="Saldo projetado: R$ 1M",
+            text=f"Lucro total: R$ ",
         )
-        self.banks = self._label(
+        self.daily_balance_label = _label(
             frame=self.info_frame,
-            text="Bancos: NU, Inter, Bradesco",
+            text=f"Saldo médio por dia: R$ ",
         )
-        self.date_lb = self._label(
+        self.total_items_label = _label(
             frame=self.info_frame,
-            text=f"Usuário criado em {self.items[:1].date.dt.strftime('%d/%m/%y')[0]}"
+            text=f"Total de itens: ",
         )
-        self.message_lb = self._label(frame=self.info_frame, text="")
-        style = ttk.Style()
-        style.theme_use("clam")
-        style.configure(
-            "Vertical.TScrollbar",
-            foreground=cm.M_COLOR["txt"],
-            background=cm.M_COLOR["darker"],
-            bordercolor=cm.M_COLOR["cbg"],
-            troughcolor=cm.M_COLOR["cbg"],
-            lightcolor=cm.M_COLOR["darker"],
-            darkcolor=cm.M_COLOR["darker"],
-            arrowcolor=cm.M_COLOR["txt"],
-            arrowsize=16,
-            gripcount=0,
+        self.forecast_balance_label = _label(
+            frame=self.info_frame,
+            text="Saldo projetado: R$ ",
         )
-        style.configure(
-            "EntryStyle.TEntry",
-            background=cm.M_COLOR["p0"],
-            # bordercolor="red",
-            # relief="flat",
-            # troughcolor=cm.M_COLOR["cbg"],
-            # arrowcolor=cm.M_COLOR["txt"],
-            # arrowsize=16,
-            # gripcount=0,
+        self.banks_label = _label(
+            frame=self.info_frame,
+            text="Bancos: ",
         )
-        style.layout(
-            "EntryStyle.TEntry",
-            [
-                (
-                    "Entry.plain.field",
-                    {
-                        "children": [
-                            (
-                                "Entry.background",
-                                {
-                                    "children": [
-                                        (
-                                            "Entry.padding",
-                                            {
-                                                "children": [
-                                                    (
-                                                        "Entry.textarea",
-                                                        {"sticky": "nswe"},
-                                                    )
-                                                ],
-                                                "sticky": "nswe",
-                                            },
-                                        )
-                                    ],
-                                    "sticky": "nswe",
-                                },
-                            )
-                        ],
-                        "border": "0",
-                        "sticky": "nswe",
-                    },
-                )
-            ],
+        self.user_date_label = _label(
+            frame=self.info_frame,
+            text=f"Usuário criado em {self.user_created_at.strftime('%d/%m/%Y')}"
         )
+        self.message_lb = _label(frame=self.info_frame, text="")
 
         # Entries.
-        # self.class_entry = ttk.Entry(
-        #     self.item_frame,
-        #     width=10,
-        #     font=cm.M_FONT,
-        #     style="EntryStyle.TEntry",
-        # )
-        # self.description_entry = ttk.Entry(
-        #     self.item_frame,
-        #     width=24,
-        #     font=cm.M_FONT,
-        #     style="EntryStyle.TEntry",
-        # )
-        # self.value_entry = ttk.Entry(
-        #     self.item_frame,
-        #     width=8,
-        #     font=cm.M_FONT,
-        #     style="EntryStyle.TEntry",
-        # )
+        self.start_date_entry = DateEntry(
+            self.info_frame,
+            width=8,
+            font=M_FONT,
+            mindate=self.first_date,
+            maxdate=self.last_date,
+            # date_pattern="dd/mm/yy",
+            # style="EntryStyle.TEntry",
+        )
+        self.start_date_entry["borderwidth"] = 1
+        self.start_date_entry["background"] = M_COLOR["darker"]
+        self.start_date_entry["foreground"] = M_COLOR["txt"]
+        self.start_date_entry.set_date(self.first_date)
+        self.end_date_entry = DateEntry(
+            self.info_frame,
+            width=8,
+            font=M_FONT,
+            mindate=self.first_date,
+            maxdate=self.last_date,
+            # date_pattern="dd/mm/yy",
+            # style="EntryStyle.TEntry",
+        )
+        self.end_date_entry["borderwidth"] = 1
+        self.end_date_entry["background"] = M_COLOR["darker"]
+        self.end_date_entry["foreground"] = M_COLOR["txt"]
 
         # Buttons.
-        # self.add_item_button = self._button(frame=self.item_frame, text="Confirmar")
-        # self.add_sub_item_button = self._button(frame=self.item_frame, text="Subitem")
-        # self.cancel_button = self._button(frame=self.item_frame, text="Cancelar")
-        self.delete_item_button = self._button(frame=self.info_frame, text="Excdasdluir")
-        self.edit_item_button = self._button(frame=self.info_frame, text="Editsaar")
+        self.set_date_button = _button(frame=self.info_frame, text="Aplicar")
+        self.today_button = _button(frame=self.info_frame, text="Hoje")
+        self.month_button = _button(frame=self.info_frame, text="Mês Atual")
+        self.compare_button = _button(frame=self.info_frame, text="Comparar")
+        self.delete_item_button = _button(frame=self.info_frame, text="Exc5luir")
+        self.edit_item_button = _button(frame=self.info_frame, text="Edi5tar")
+
         # Commands.
-        # self.add_item_button["command"] = self.add_items
-        # self.delete_item_button["command"] = self.del_item
-        # self.cancel_button["command"] = self.cancel
-        # self.add_sub_item_button["command"] = self.toggle_sub_item
-        # self.sub_toggle_button['command'] =
 
         # Griding.
         self.name_label.grid(row=0, column=0, sticky=W, padx=2)
-        # self.class_entry.grid(row=1, column=0, padx=2)
-        self.daily_balance.grid(row=1, column=0, sticky=W, padx=2)
-        # self.description_entry.grid(row=1, column=1, padx=2)
-        # self.sub_description_entry.grid(row=2, column=1, padx=2)
-        # self.value_entry.grid(row=1, column=2, padx=2)
-        # self.sub_value_entry.grid(row=2, column=2, padx=2)
-        self.banks.grid(row=0, column=3, sticky=W, padx=2)
-        # self.type_list.grid(row=1, column=3, sticky=W, padx=2)
-        # self.add_sub_item_button.grid(row=2, column=0, padx=2)
-        self.date_lb.grid(row=4, column=4, sticky=W, padx=2)
-        self.total_items.grid(row=2, column=0, sticky=W, padx=2)
-        self.forecast_balance.grid(row=3, column=0, sticky=W, padx=2)
-        # self.date_entry.grid(row=1, column=4, padx=2)
-        # self.add_item_button.grid(row=1, column=5, padx=2)
-        # self.cancel_button.grid(row=2, column=5, padx=2)
+        self.today_button.grid(row=0, column=1, sticky=E, padx=2, pady=2)
+        self.month_button.grid(row=0, column=2, padx=2, pady=2)
+        self.compare_button.grid(row=0, column=3, padx=2, pady=2)
+        self.start_date_entry.grid(row=1, column=1, padx=2)
+        self.end_date_entry.grid(row=1, column=2, padx=2)
+        self.set_date_button.grid(row=1, column=3, sticky=E, padx=2)
+        self.total_profit_label.grid(row=2, column=0, sticky=W, padx=2)
+        self.total_spend_label.grid(row=3, column=0, sticky=W, padx=2)
+        self.total_balance_label.grid(row=4, column=0, sticky=W, padx=2)
+        self.daily_balance_label.grid(row=5, column=0, sticky=W, padx=2)
+        self.total_items_label.grid(row=6, column=0, sticky=W, padx=2)
+        self.forecast_balance_label.grid(row=7, column=0, sticky=W, padx=2)
+        self.banks_label.grid(row=8, column=0, sticky=W, padx=2)
+        self.user_date_label.grid(row=9, column=4, sticky=W, padx=2)
+
+        # Binds.
+        # self.change_date_range(start=, end=)
+        self.set_date_button["command"] = self.apply_date
+        self.today_button["command"] = lambda: self.set_date(
+            start=self.today,
+            end=self.today,
+        )
+        self.month_button["command"] = lambda: self.set_date(
+            start=self.today.replace(day=1),
+            end=self.today.replace(day=self.end_of_month),
+        )
+
+        # Calls.
+        self.update_info()
+
+    def apply_date(self):
+        self.change_date_range(
+            start=self.start_date_entry.get_date().strftime("%Y-%m-%d"),
+            end=self.end_date_entry.get_date().strftime("%Y-%m-%d"),
+        )
+        self.update_info()
+
+    def set_date(self, start, end):
+        if self.validate_date(start, end):
+            self.start_date_entry.set_date(date=start)
+            self.end_date_entry.set_date(date=end)
+            self.apply_date()
+
+    def validate_date(self, start, end):
+        if start > self.last_date or end < self.first_date:
+            self.master.status_bar.show_message(text="Nenhuma informação encontrada.")
+            return False
+        else:
+            return True
+
+    def change_date_range(self, start, end):
+        self.filtered_items = self.items.loc[start:end]
+        self.filtered_items = self.filtered_items.drop(
+            self.filtered_items[self.filtered_items.kind == "Base"].index
+        )
 
     def update_item_list(self):
         self.items = pd.DataFrame(
             [vars(field) for field in read_items(customer_id=self.customer.id)]
         )
+        self.items["date"] = pd.to_datetime(self.items.date)
+        self.items.set_index("date", inplace=True)
 
-    def _label(self, frame, text, font=cm.M_FONT, anchor="w"):
-        label = Label(
-            frame,
-            text=text,
-            fg=cm.M_COLOR["txt"],
-            bg=cm.M_COLOR["cbg"],
-            font=font,
-            anchor=anchor,
-        )
-        return label
+    def calculate_statistics(self):
+        self.average_daily_balance = self.filtered_items.value.mean()
+        self.total_profit = self.filtered_items[
+                               self.filtered_items.type == 1
+                           ].value.sum()
+        self.total_spend = self.filtered_items[
+                               self.filtered_items.type == -1
+                           ].value.sum()
+        self.total_balance = self.total_profit + self.total_spend
+        self.items_count = self.filtered_items.shape[0]
+        self.last_date = self.filtered_items.index.max()
 
-    def _button(self, frame, text, font=cm.M_FONT):
-        button = Button(
-            frame,
-            font=font,
-            bg=cm.M_COLOR["darker"],
-            width=8,
-            height=1,
-            fg=cm.M_COLOR["txt"],
-            bd=0,
-            text=text,
-            activebackground=cm.M_COLOR["darker"],
-            activeforeground=cm.M_COLOR["cbg"],
+    def update_info(self):
+        self.calculate_statistics()
+        self.total_spend_label.configure(
+            text=f"Gasto total: R$ {self.total_spend:.02f}"
         )
-        return button
+        self.total_profit_label.configure(
+            text=f"Lucro total: R$ {self.total_profit:.02f}"
+        )
+        self.total_balance_label.configure(
+            text=f"Saldo total: R$ {self.total_balance:.02f}"
+        )
+        self.daily_balance_label.configure(
+            text=f"Saldo médio por dia: R$ {self.average_daily_balance:.02f}"
+        )
+        self.total_items_label.configure(
+            text=f"Total de itens: {self.items_count}"
+        )

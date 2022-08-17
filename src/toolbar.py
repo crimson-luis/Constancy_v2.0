@@ -26,7 +26,7 @@ class Toolbar(Frame):
         self.toolbar_canvas = Canvas(
             self,
             bg=M_COLOR["darker"],
-            width=152,
+            width=160,
             height=164,
             highlightthickness=0,
         )

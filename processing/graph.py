@@ -12,6 +12,7 @@ class Graph:
         self.customer = customer
         self.items = pd.DataFrame()
         self.balance_series = pd.DataFrame()
+        self.manager = None
         self.get_items()
 
     def get_items(self):
@@ -34,9 +35,9 @@ class Graph:
         plt.subplots_adjust(right=0.95, top=0.93, bottom=0.15)
         plt.title("Saldo ao longo do tempo")
         fig = plt.gcf()
-        manager = plt.get_current_fig_manager()
-        manager.window.wm_iconbitmap(resource_path("images/icon.ico"))
-        manager.set_window_title(f"{self.customer.name} - Balance")
+        self.manager = plt.get_current_fig_manager()
+        self.manager.window.wm_iconbitmap(resource_path("images/icon.ico"))
+        self.manager.set_window_title(f"{self.customer.name} - Balance")
         # manager.window.SetPosition()
         plt.ylim(bottom=0)
         plt.xlabel("Data")

@@ -8,7 +8,7 @@ from src.main import MainWindow
 from common import (
     M_FONT,
     M_COLOR,
-    set_appwindow,
+    set_app_window,
 )
 
 
@@ -31,7 +31,7 @@ class MessageWindow(Toplevel):
         self["bg"] = M_COLOR["cbg"]
         self.title("")
         lh.Logger().log_it("kern", "info", "Message window opened.")
-        set_appwindow(self)
+        set_app_window(self)
 
         # Buttons.
         self.send_bt = Button(self, width=6, height=1, bd=0, text="OK", pady=0)

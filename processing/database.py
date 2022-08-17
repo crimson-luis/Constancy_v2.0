@@ -1,7 +1,7 @@
 import common as cm
 import os
 
-# import pandas as pd
+import pandas as pd
 import datetime
 from typing import Optional, List
 from sqlmodel import (
@@ -186,6 +186,13 @@ def delete_customer(item_id):
         session.delete(customer)
         session.commit()
         return True
+
+
+def sqmodel_to_df(objs: List[SQLModel]) -> pd.DataFrame:
+    """Convert a SQLModel objects into a pandas DataFrame."""
+    records = [i.dict() for i in objs]
+    df = pd.DataFrame.from_records(records)
+    return df
 
 
 if __name__ == "__main__":
